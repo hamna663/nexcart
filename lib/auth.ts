@@ -2,7 +2,11 @@ import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
 import { connectToDB } from "./db";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { sendEmail,dash } from "@better-auth/infra";
+import { transporter } from "./email";
+import { EmailVerificationOTPEmail } from "@/features/mails/EmailVerificationOTPEmail";
+import { ForgotPasswordOTPEmail } from "@/features/mails/ForgotPasswordOTPEmail";
+import { PasswordResetEmail } from "@/features/mails/PasswordResetEmail";
+import type { User } from "better-auth";
 
 const db = await connectToDB();
 
@@ -13,34 +17,16 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    async sendResetPassword({ user, url }) {
-      await sendEmail({
-        template: "reset-password",
+    async sendResetPassword({ user, url }: { user: User; url: string }) {
+      const html = PasswordResetEmail({ url, user });
+
+      await transporter.sendMail({
         to: user.email,
-        variables: {
-          resetLink: url,
-          userEmail: user.email,
-          userName: user.name || "User",
-          appName: "NexCart",
-          expirationMinutes: "60",
-        },
+        subject: "Password Reset Request",
+        html,
       });
-    },
-  },
-  emailVerification: {
-    sendOnSignUp: true,
-    async sendVerificationEmail({ user, url }) {
-      await sendEmail({
-        template: "verify-email",
-        to: user.email,
-        variables: {
-          verificationUrl: url,
-          userEmail: user.email,
-          userName: user.name || "User",
-          appName: "NexCart",
-          expirationMinutes: "60",
-        },
-      });
+
+      console.log("📧 Password reset email sent to", user.email);
     },
   },
   socialProviders: {
@@ -50,36 +36,69 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-     dash(),
     emailOTP({
+      // Store OTP in database - better-auth will automatically use the configured database
       async sendVerificationOTP({ email, otp, type }) {
-        const templates: Record<string, { template: string; subject: string }> = {
-          "sign-in": { template: "sign-in-otp", subject: "Your Sign In Code" },
+        console.log(`📧 Processing ${type} OTP for ${email}:`, otp);
+
+        // Handle email-verification and password-reset OTP types
+        const emailTypeMap = {
           "email-verification": {
-            template: "verify-email-otp",
+            generator: EmailVerificationOTPEmail,
             subject: "Email Verification Code",
           },
           "password-reset": {
-            template: "reset-password-otp",
+            generator: ForgotPasswordOTPEmail,
             subject: "Password Reset Code",
           },
-        };
+        } as const;
 
-        const config = templates[type] || templates["sign-in"];
+        // Skip sign-in OTP
+        if (type === "sign-in") {
+          console.log("⏭️ Skipping sign-in OTP");
+          return;
+        }
+
+        const config = emailTypeMap[type as keyof typeof emailTypeMap];
+
+        if (!config) {
+          console.warn(`⚠️ No config found for OTP type: ${type}`);
+          return;
+        }
 
         try {
-          await sendEmail({
-            template: config.template as any,
-            to: email,
-            variables: {
-              otpCode: otp,
-              userEmail: email,
-              appName: "NexCart",
-              expirationMinutes: type === "sign-in" ? "10" : "30",
-            },
+          // Manually store OTP in database since plugin might not do it automatically
+          const dbInstance = await connectToDB();
+          await dbInstance.collection("emailOtp").insertOne({
+            email,
+            otp,
+            type,
+            createdAt: new Date(),
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
           });
+          console.log(`💾 OTP stored in database for ${email}`);
+
+          // Generate email HTML
+          const html = config.generator({
+            otp,
+            email,
+          });
+
+          // Send email
+          await transporter.sendMail({
+            to: email,
+            subject: config.subject,
+            html,
+          });
+
+          console.log(
+            `✅ Successfully sent ${type} OTP to ${email}. Code: ${otp}`
+          );
         } catch (error) {
-          console.error(`Failed to send ${type} OTP to ${email}:`, error);
+          console.error(
+            `❌ Failed to send ${type} OTP to ${email}:`,
+            error
+          );
           throw error;
         }
       },

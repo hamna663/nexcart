@@ -20,6 +20,7 @@ interface IUser {
   isVerified: boolean;
   verificationCode?: string;
   phone: IPhone;
+  isAdmin: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -55,6 +56,10 @@ const userSchema = new Schema<IUser>(
     },
     phone: {
       type: phoneSchema,
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
     },
   },
   {

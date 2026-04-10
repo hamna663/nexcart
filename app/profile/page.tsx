@@ -20,6 +20,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Field,
   FieldGroup,
   FieldError,
@@ -71,6 +80,7 @@ const ProfilePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isSendingVerification, setIsSendingVerification] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const form = useForm<PasswordResetForm>({
     resolver: zodResolver(passwordResetSchema),
@@ -166,51 +176,59 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Profile</h1>
-            <p className="text-gray-600 mt-1">Manage your account settings</p>
-          </div>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-foreground">Profile Settings</h1>
+          <p className="text-muted-foreground text-lg">
+            Manage your account information and preferences
+          </p>
         </div>
 
         {/* User Info Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconUser size={24} />
+        <Card className="border border-border shadow-sm">
+          <CardHeader className="border-b border-border bg-card pb-6">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2.5 rounded-lg bg-primary/10">
+                <IconUser size={24} className="text-primary" />
+              </div>
               Account Information
             </CardTitle>
-            <CardDescription>Your personal account details</CardDescription>
+            <CardDescription className="text-base mt-1">
+              Your personal account details
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             {/* Name */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
               <div>
-                <p className="text-sm text-gray-600">Name</p>
-                <p className="text-lg font-semibold">{user.name}</p>
+                <p className="text-sm font-medium text-muted-foreground">Name</p>
+                <p className="text-lg font-semibold text-foreground mt-1">
+                  {user.name}
+                </p>
               </div>
             </div>
 
             {/* Email */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
               <div className="flex-1">
-                <p className="text-sm text-gray-600 flex items-center gap-2">
-                  <IconMail size={16} />
-                  Email
+                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <IconMail size={16} className="text-primary" />
+                  Email Address
                 </p>
-                <p className="text-lg font-semibold">{user.email}</p>
+                <p className="text-lg font-semibold text-foreground mt-1">
+                  {user.email}
+                </p>
               </div>
-              <div>
+              <div className="ml-4">
                 {user.emailVerified ? (
-                  <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full flex items-center gap-1">
+                  <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm font-semibold rounded-full flex items-center gap-1 whitespace-nowrap">
                     <IconMailCheck size={16} />
                     Verified
                   </span>
                 ) : (
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full">
+                  <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">
                     Unverified
                   </span>
                 )}
@@ -218,11 +236,17 @@ const ProfilePage = () => {
             </div>
 
             {/* Account Created Date */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
               <div>
-                <p className="text-sm text-gray-600">Account Created</p>
-                <p className="text-lg font-semibold">
-                  {new Date(user.createdAt).toLocaleDateString()}
+                <p className="text-sm font-medium text-muted-foreground">
+                  Member Since
+                </p>
+                <p className="text-lg font-semibold text-foreground mt-1">
+                  {new Date(user.createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </p>
               </div>
             </div>
@@ -230,47 +254,57 @@ const ProfilePage = () => {
         </Card>
 
         {/* Actions Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconShield size={24} />
+        <Card className="border border-border shadow-sm">
+          <CardHeader className="border-b border-border bg-card pb-6">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2.5 rounded-lg bg-primary/10">
+                <IconShield size={24} className="text-primary" />
+              </div>
               Security Settings
             </CardTitle>
-            <CardDescription>Manage your account security</CardDescription>
+            <CardDescription className="text-base mt-1">
+              Protect and manage your account security
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="pt-6 space-y-3">
             {/* Change Password Button */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start h-12 px-4 border-border hover:bg-primary/5 hover:border-primary/20 transition-all"
                   disabled={isChangingPassword}
                 >
-                  <IconLock className="mr-2" size={18} />
-                  Change Password
+                  <div className="p-1.5 rounded bg-primary/10 mr-3">
+                    <IconLock className="text-primary" size={18} />
+                  </div>
+                  <span className="text-base font-medium">Change Password</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-106.25">
                 <DialogHeader>
-                  <DialogTitle>Change Password</DialogTitle>
-                  <DialogDescription>
-                    Enter your current password and choose a new one
+                  <DialogTitle className="text-2xl">Change Password</DialogTitle>
+                  <DialogDescription className="text-base">
+                    Enter your current password and set a new one to keep your
+                    account secure
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={form.handleSubmit(handleChangePassword)}>
-                  <FieldGroup className="gap-y-3">
+                  <FieldGroup className="gap-y-4">
                     <Controller
                       name="currentPassword"
                       control={form.control}
                       render={({ field, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel>Current Password</FieldLabel>
+                          <FieldLabel className="text-base font-medium">
+                            Current Password
+                          </FieldLabel>
                           <Input
                             {...field}
                             type="password"
                             placeholder="Enter current password"
                             aria-invalid={fieldState.invalid}
+                            className="h-10"
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />
@@ -283,12 +317,15 @@ const ProfilePage = () => {
                       control={form.control}
                       render={({ field, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel>New Password</FieldLabel>
+                          <FieldLabel className="text-base font-medium">
+                            New Password
+                          </FieldLabel>
                           <Input
                             {...field}
                             type="password"
                             placeholder="Enter new password"
                             aria-invalid={fieldState.invalid}
+                            className="h-10"
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />
@@ -301,12 +338,15 @@ const ProfilePage = () => {
                       control={form.control}
                       render={({ field, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel>Confirm Password</FieldLabel>
+                          <FieldLabel className="text-base font-medium">
+                            Confirm Password
+                          </FieldLabel>
                           <Input
                             {...field}
                             type="password"
                             placeholder="Confirm new password"
                             aria-invalid={fieldState.invalid}
+                            className="h-10"
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />
@@ -317,9 +357,9 @@ const ProfilePage = () => {
                     <Button
                       type="submit"
                       disabled={isChangingPassword}
-                      className="w-full mt-4"
+                      className="w-full h-10 mt-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                     >
-                      {isChangingPassword ? "Changing..." : "Change Password"}
+                      {isChangingPassword ? "Updating..." : "Update Password"}
                     </Button>
                   </FieldGroup>
                 </form>
@@ -330,24 +370,50 @@ const ProfilePage = () => {
             {!user.emailVerified && (
               <Button
                 variant="outline"
-                className="w-full justify-start"
+                className="w-full justify-start h-12 px-4 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 transition-all"
                 onClick={handleVerifyEmail}
                 disabled={isSendingVerification}
               >
-                <IconMailCheck className="mr-2" size={18} />
-                {isSendingVerification ? "Sending..." : "Verify Email"}
+                <div className="p-1.5 rounded bg-yellow-100 mr-3">
+                  <IconMailCheck className="text-yellow-600" size={18} />
+                </div>
+                <span className="text-base font-medium text-yellow-900">
+                  {isSendingVerification ? "Sending..." : "Verify Email"}
+                </span>
               </Button>
             )}
 
             {/* Logout Button */}
             <Button
-              variant="destructive"
-              className="w-full justify-start"
-              onClick={handleLogout}
+              className="w-full h-12 px-4 bg-destructive hover:bg-destructive/90 text-primary-foreground font-semibold transition-all justify-start"
+              onClick={() => setShowLogoutConfirm(true)}
             >
-              <IconLogout className="mr-2" size={18} />
-              Logout
+              <div className="p-1.5 rounded bg-red-600/20 mr-3">
+                <IconLogout className="text-current" size={18} />
+              </div>
+              <span className="text-base font-medium">Logout</span>
             </Button>
+
+            {/* Logout Confirmation Dialog */}
+            <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to logout? You'll need to sign in again to access your account.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="flex gap-3 justify-end">
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleLogout}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    Logout
+                  </AlertDialogAction>
+                </div>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
       </div>

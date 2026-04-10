@@ -35,21 +35,49 @@ const SignIn = () => {
 
   async function onSubmit(values: z.infer<typeof userSignInSchema>) {
     setIsLoading(true);
-    const res = await authClient.signIn.email(
-      {
-        email: values.email,
-        password: values.password,
-        callbackURL: "/",
-      },
-      {
-        onSuccess: () => router.push("/"),
-        onError: (ctx) => {
-          toast.error(ctx.error.message);
+    try {
+      const res = await authClient.signIn.email(
+        {
+          email: values.email,
+          password: values.password,
+          callbackURL: "/",
         },
-      },
-    );
-    console.log(res);
-    setIsLoading(false);
+        {
+          onSuccess: async () => {
+            // Fetch user session to check if admin
+            const session = await authClient.getSession();
+            const user = session.data?.user;
+
+            if (user) {
+              // Fetch full user details to check isAdmin field
+              const response = await fetch("/api/auth/get-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: user.email }),
+              });
+
+              const userData = await response.json();
+
+              if (userData.isAdmin) {
+                router.push("/admin");
+              } else {
+                router.push("/");
+              }
+            } else {
+              router.push("/");
+            }
+          },
+          onError: (ctx) => {
+            toast.error(ctx.error.message);
+            setIsLoading(false);
+          },
+        },
+      );
+    } catch (error) {
+      console.error("Sign in error:", error);
+      toast.error("An error occurred during sign in");
+      setIsLoading(false);
+    }
   }
 
   return (

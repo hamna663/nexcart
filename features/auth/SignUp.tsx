@@ -36,22 +36,30 @@ const Signup = () => {
 
   async function onSubmit(values: z.infer<typeof userSignUpSchema>) {
     setIsLoading(true);
-    const res = await authClient.signUp.email(
-      {
-        email: values.email,
-        name: values.name,
-        password: values.password,
-        callbackURL: "/",
-      },
-      {
-        onSuccess: () => router.push("/"),
-        onError: (ctx) => {
-          toast.error(ctx.error.message);
+    try {
+      const res = await authClient.signUp.email(
+        {
+          email: values.email,
+          name: values.name,
+          password: values.password,
+          callbackURL: "/verify-email",
         },
-      },
-    );
-    console.log(res);
-    setIsLoading(false);
+        {
+          onSuccess: () => {
+            // Redirect to email verification page with email parameter
+            router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+          },
+          onError: (ctx) => {
+            toast.error(ctx.error.message);
+            setIsLoading(false);
+          },
+        },
+      );
+      console.log(res);
+    } catch (error) {
+      console.error("Signup error:", error);
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -128,7 +136,7 @@ const Signup = () => {
               )}
             />
             <Button type="submit" disabled={isLoading} className="w-full">
-              <IconLogin2 />
+              <IconLogin2 className="w-4 h-4 mr-2" />
               {isLoading ? "Signing up..." : "Sign Up"}
             </Button>
             <FieldSeparator />
