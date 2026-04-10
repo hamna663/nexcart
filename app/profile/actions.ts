@@ -2,7 +2,6 @@
 
 import { auth } from "@/lib/auth";
 import { sendEmail } from "@better-auth/infra";
-import { headers } from "next/headers";
 
 interface ChangePasswordInput {
   currentPassword: string;
@@ -11,9 +10,7 @@ interface ChangePasswordInput {
 
 export async function changePasswordAction(data: ChangePasswordInput) {
   try {
-    const session = await auth.api.getSession({
-      headers: headers(),
-    });
+    const session = await auth.api.getSession();
 
     if (!session?.user) {
       return {
