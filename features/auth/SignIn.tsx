@@ -1,104 +1,153 @@
-'use client'
+"use client";
+import { useState } from "react";
+import { CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Field,
+  FieldGroup,
+  FieldError,
+  FieldLabel,
+  FieldSeparator,
+} from "@/components/ui/field";
+import { Controller, useForm } from "react-hook-form";
+import { userSignInSchema } from "@/schemas/userSchema";
+import z from "zod";
+import { toast } from "sonner";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { IconEye, IconLogin2, IconMailFilled } from "@tabler/icons-react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
-import { authClient } from "./auth-client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { useForm } from 'react-hook-form'
-import z from 'zod'
-import { signinSchema } from '@/schemas/signinSchema'
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from '@/components/ui/button'
-import { authClient } from '@/lib/auth-client'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
+const SignIn = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-const Signin = () => {
-
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-
-  const form = useForm<z.infer<typeof signinSchema>>({
-    resolver: zodResolver(signinSchema),
+  const form = useForm<z.infer<typeof userSignInSchema>>({
+    resolver: zodResolver(userSignInSchema),
     defaultValues: {
       email: "",
-      password: ""
-    }
-  })
-
-  const onSubmit = async (values: z.infer<typeof signinSchema>) => {
-    setIsLoading(true)
-    const res = authClient.signIn.email({
-      email: values.email,
-      password: values.password,
-      callbackURL: "/"
+      password: "",
     },
+  });
+
+  async function onSubmit(values: z.infer<typeof userSignInSchema>) {
+    setIsLoading(true);
+    const res = await authClient.signIn.email(
       {
-        onerror(ctx: any) {
-          toast.error(ctx.error.message)
+        email: values.email,
+        password: values.password,
+        callbackURL: "/",
+      },
+      {
+        onSuccess: () => router.push("/"),
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
         },
-        onSuccess() {
-          router.push('/')
-        }
-      })
-    setIsLoading(false)
+      },
+    );
+    console.log(res);
+    setIsLoading(false);
   }
 
   return (
-    <div>
-      <Card>
-        <CardHeader className='text-center'>
-          <CardTitle className='text-2xl font-bold'>Welcome back</CardTitle>
-          <CardDescription>Signin to Continue</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="secondary" className='w-full my-4'>
-            <Image alt='Google' src="/logo/google.png" width="30" height="30" />
-            Continue with Google
+    <>
+      <CardContent className="gap-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <FieldGroup className="gap-y-3">
+            <Controller
+              name="email"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel className="text-lg">Email</FieldLabel>
+                  <Input
+                    {...field}
+                    aria-invalid={fieldState.invalid}
+                    placeholder="user@example.com"
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              name="password"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel className="text-lg">Password</FieldLabel>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      aria-invalid={fieldState.invalid}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="********"
+                      className="pr-12"
+                    />
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        setShowPassword((prev) => !prev);
+                      }}
+                      onFocus={() => setShowPassword(!showPassword)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 text-gray-500 hover:text-gray-700 active:text-gray-900 rounded z-20 cursor-pointer pointer-events-auto"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      <IconEye size="20" />
+                    </button>
+                  </div>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Button type="submit" disabled={isLoading} className="w-full">
+              <IconLogin2 />
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
-          <Button variant="secondary" className='w-full my-4'>
-            <Image alt='Github' src="/logo/github.png" width="30"  height="30"/>
-            Continue with GitHub
+            <FieldSeparator />
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push("/sign-in/otp")}
+            >
+              <IconMailFilled className="mr-3" />
+              Sign in with OTP
             </Button>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-              <FormField
-                name="email"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel >Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder='me@example.com' {...field} />
-                    </FormControl>
-                    <FormMessage></FormMessage>
-                  </FormItem>
-                )}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push("/sign-in/google")}
+            >
+              <Image
+                src="/google.png"
+                alt="Google"
+                width={20}
+                height={20}
+                className="mr-2"
               />
-              <FormField
-                name="password"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder='********' {...field} />
-                    </FormControl>
-                    <FormMessage></FormMessage>
-                  </FormItem>
-                )}
-              />
-              <Button className='w-full' disabled={isLoading}>Sign in</Button>
-            </form>
-          </Form>
-          <p className='text-center my-3'>Don't have an account? <Link href="/signup" className='underline'>Signup</Link></p>
-        </CardContent>
-      </Card>
-    </div >
-  )
-}
+              Sign in with Google
+            </Button>
+          </FieldGroup>
+        </form>
+      </CardContent>
+      <CardFooter className="text-center flex items-center justify-center">
+        <p className="text-sm mt-2">
+          New to NexCart?{" "}
+          <a href="/sign-up" className="text-primary hover:underline">
+            Sign up
+          </a>
+        </p>
+      </CardFooter>
+    </>
+  );
+};
 
-export default Signin
+export default SignIn;

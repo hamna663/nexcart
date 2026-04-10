@@ -1,127 +1,164 @@
-'use client'
-
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { useForm } from 'react-hook-form'
-import z from 'zod'
-import { signupSchema } from '@/schemas/signupSchema'
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from '@/components/ui/button'
-import { authClient } from '@/lib/auth-client'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
+"use client";
+import { useState } from "react";
+import { CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Field,
+  FieldGroup,
+  FieldError,
+  FieldLabel,
+  FieldSeparator,
+} from "@/components/ui/field";
+import { Controller, useForm } from "react-hook-form";
+import { userSignUpSchema } from "@/schemas/userSchema";
+import z from "zod";
+import { toast } from "sonner";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { IconEye, IconLogin2 } from "@tabler/icons-react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 const Signup = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const form = useForm<z.infer<typeof signupSchema>>({
-    resolver: zodResolver(signupSchema),
+  const form = useForm<z.infer<typeof userSignUpSchema>>({
+    resolver: zodResolver(userSignUpSchema),
     defaultValues: {
       name: "",
       email: "",
       password: "",
-      confirm_password: ""
-    }
-  })
+    },
+  });
 
-  const onSubmit = async (values: z.infer<typeof signupSchema>) => {
-    setIsLoading(true)
-    const res = await authClient.signUp.email({
-      name: values.name,
-      email: values.email,
-      password: values.password,
-      callbackURL: "/"
-    }, {
-      onSuccess: () => router.push('/'),
-      onError: (ctx) => { toast.error(ctx.error.message) }
-    }
-    )
-    setIsLoading(false)
+  async function onSubmit(values: z.infer<typeof userSignUpSchema>) {
+    setIsLoading(true);
+    const res = await authClient.signUp.email(
+      {
+        email: values.email,
+        name: values.name,
+        password: values.password,
+        callbackURL: "/",
+      },
+      {
+        onSuccess: () => router.push("/"),
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
+        },
+      },
+    );
+    console.log(res);
+    setIsLoading(false);
   }
 
   return (
-    <div>
-      <Card className='py-2'>
-        <CardHeader className='text-center my-0'>
-          <CardTitle className='text-2xl font-bold'>Welcome Here</CardTitle>
-          <CardDescription>Signup to Start your journey</CardDescription>
-        </CardHeader>
-        <CardContent className='my-0'>
-          <Button variant="secondary" className='w-full my-4'>
-            <Image alt='Google' src="/logo/google.png" width="30" height="30" />
-            Continue with Google
-          </Button>
-          <Button variant="secondary" className='w-full my-4'>
-            <Image alt='Github' className='invert' src="/logo/github.png" width="30" height="30" />
-            Continue with GitHub
-          </Button>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-2 mt-2'>
-              <FormField
-                name="name"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder='John Doe' {...field} />
-                    </FormControl>
-                    <FormMessage></FormMessage>
-                  </FormItem>
-                )}
+    <>
+      <CardContent className="gap-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <FieldGroup className="gap-y-3">
+            <Controller
+              name="name"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel className="text-lg">Name</FieldLabel>
+                  <Input
+                    {...field}
+                    aria-invalid={fieldState.invalid}
+                    placeholder="John Doe"
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              name="email"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel className="text-lg">Email</FieldLabel>
+                  <Input
+                    {...field}
+                    aria-invalid={fieldState.invalid}
+                    placeholder="user@example.com"
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              name="password"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel className="text-lg">Password</FieldLabel>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      aria-invalid={fieldState.invalid}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="********"
+                      className="pr-12 pointer-events-auto"
+                    />
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        setShowPassword((prev) => !prev);
+                      }}
+                      onFocus={() => setShowPassword(!showPassword)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 text-gray-500 hover:text-gray-700 active:text-gray-900 rounded z-20 cursor-pointer pointer-events-auto"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      <IconEye size="20" />
+                    </button>
+                  </div>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Button type="submit" disabled={isLoading} className="w-full">
+              <IconLogin2 />
+              {isLoading ? "Signing up..." : "Sign Up"}
+            </Button>
+            <FieldSeparator />
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push("/sign-up/google")}
+            >
+              <Image
+                src="/google.png"
+                alt="Google"
+                width={20}
+                height={20}
+                className="mr-2"
               />
-              <FormField
-                name="email"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel >Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder='me@example.com' {...field} />
-                    </FormControl>
-                    <FormMessage></FormMessage>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                name="password"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder='********' {...field} />
-                    </FormControl>
-                    <FormMessage></FormMessage>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                name="confirm_password"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder='********' {...field} />
-                    </FormControl>
-                    <FormMessage></FormMessage>
-                  </FormItem>
-                )}
-              />
-              <Button className='w-full' disabled={isLoading}>Sign up</Button>
-            </form>
-          </Form>
-          <p className='text-center my-3'>Already have an account? <Link href="/signin" className='underline'>Signin</Link></p>
-        </CardContent>
-      </Card>
-    </div >
-  )
-}
+              Continue with Google
+            </Button>
+          </FieldGroup>
+        </form>
+      </CardContent>
+      <CardFooter className="text-center flex items-center justify-center">
+        <p className="text-sm mt-2">
+          Already have an account?{" "}
+          <a href="/sign-in" className="text-primary hover:underline">
+            Sign in
+          </a>
+        </p>
+      </CardFooter>
+    </>
+  );
+};
 
-export default Signup
+export default Signup;
